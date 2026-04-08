@@ -1,0 +1,167 @@
+<script type="text/javascript">
+  RED.nodes.registerType("viewtron-camera", {
+    category: "network",
+    color: "#1a56db",
+    defaults: {
+      name: { value: "" },
+      port: { value: 5002, required: true, validate: RED.validators.number() },
+      includeImages: { value: false },
+    },
+    inputs: 0,
+    outputs: 5,
+    outputLabels: ["LPR", "Intrusion", "Face", "Counting", "Other"],
+    icon: "font-awesome/fa-video-camera",
+    label: function () {
+      return this.name || "viewtron camera";
+    },
+    paletteLabel: "viewtron camera",
+  });
+</script>
+
+<script type="text/html" data-template-name="viewtron-camera">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Viewtron Camera" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-port"><i class="fa fa-plug"></i> Port</label>
+    <input
+      type="number"
+      id="node-input-port"
+      placeholder="5002"
+      style="width: 100px"
+    />
+    <span style="margin-left: 8px; color: #888"
+      >HTTP listener port for camera events</span
+    >
+  </div>
+  <div class="form-row">
+    <label for="node-input-includeImages"
+      ><i class="fa fa-image"></i> Images</label
+    >
+    <input
+      type="checkbox"
+      id="node-input-includeImages"
+      style="width: auto; margin-right: 8px"
+    />
+    <span>Include base64 images in output</span>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="viewtron-camera">
+  <p>
+    Receives AI detection events from Viewtron IP cameras and NVRs via HTTP
+    POST. The camera sends XML event data when it detects license plates,
+    people, vehicles, or faces. This node parses those events and outputs
+    structured JSON messages.
+  </p>
+
+  <h3>Setup</h3>
+  <p>
+    Configure your Viewtron camera or NVR to send HTTP POST events to this
+    node's IP address and port. In the camera's web interface: <b>Network</b> &gt;
+    <b>HTTP POST</b> &gt; <b>Edit</b> &gt; <b>Add</b>. Enter the Node-RED
+    machine's IP, the port configured above, and <code>/API</code> as the path.
+  </p>
+
+  <h3>Outputs</h3>
+  <p>The node has 5 outputs, one per detection category:</p>
+  <ol>
+    <li>
+      <b>LPR</b> — License plate recognition events.
+      <code>msg.payload.plate_number</code>,
+      <code>msg.payload.plate_status</code> (Authorized, Blacklisted,
+      Temporary, Unknown), <code>msg.payload.vehicle</code> (brand, color, type
+      — NVR v2.0 only).
+    </li>
+    <li>
+      <b>Intrusion</b> — Person/vehicle enters a zone, crosses a line, or
+      loiters. <code>msg.payload.target_type</code> (person, car, motorcycle).
+    </li>
+    <li>
+      <b>Face</b> — Face detection events.
+      <code>msg.payload.face</code> (age, sex, glasses, mask — NVR v2.0 only).
+    </li>
+    <li>
+      <b>Counting</b> — People/vehicle counting by line or area.
+    </li>
+    <li>
+      <b>Other</b> — Video metadata and other event types.
+    </li>
+  </ol>
+
+  <h3>Common Fields</h3>
+  <dl class="message-properties">
+    <dt>payload.event_type <span class="property-type">string</span></dt>
+    <dd>
+      Raw alarm type from camera (e.g., <code>VEHICE</code>,
+      <code>vehicle</code>, <code>PEA</code>, <code>regionIntrusion</code>)
+    </dd>
+    <dt>payload.category <span class="property-type">string</span></dt>
+    <dd>
+      Normalized category: <code>lpr</code>, <code>intrusion</code>,
+      <code>face</code>, <code>counting</code>, <code>metadata</code>
+    </dd>
+    <dt>payload.camera_ip <span class="property-type">string</span></dt>
+    <dd>IP address of the camera that sent the event</dd>
+    <dt>payload.timestamp <span class="property-type">string</span></dt>
+    <dd>Event timestamp from the camera</dd>
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>
+      Set to <code>viewtron/{category}</code> for easy MQTT publishing
+    </dd>
+  </dl>
+
+  <h3>Images</h3>
+  <p>
+    When <b>Include base64 images</b> is checked,
+    <code>msg.payload.source_image</code> (full scene) and
+    <code>msg.payload.target_image</code> (cropped target) are included as
+    base64 JPEG strings. These can be large — disable if not needed.
+  </p>
+
+  <h3>API Versions</h3>
+  <p>
+    Viewtron cameras use two XML formats: <b>IPC v1.x</b> (direct from camera)
+    and <b>NVR v2.0</b> (forwarded via NVR). This node handles both
+    automatically. NVR v2.0 events include additional fields like vehicle
+    brand/model (LPR) and face attributes (age, sex, glasses, mask).
+  </p>
+
+  <h3>Documentation</h3>
+  <ul>
+    <li>
+      <a href="https://videos.cctvcamerapros.com/developer/" target="_blank"
+        >Viewtron API Developer Docs</a
+      >
+    </li>
+    <li>
+      <a
+        href="https://videos.cctvcamerapros.com/developer/docs/getting-started/http-post-setup/"
+        target="_blank"
+        >Camera HTTP POST Setup Guide</a
+      >
+    </li>
+    <li>
+      <a
+        href="https://github.com/mikehaldas/node-red-contrib-viewtron"
+        target="_blank"
+        >GitHub — Source Code &amp; Examples</a
+      >
+    </li>
+  </ul>
+
+  <h3>Compatible Cameras</h3>
+  <p>
+    Works with any
+    <a href="https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm" target="_blank"
+      >Viewtron AI security camera</a
+    >
+    or
+    <a href="https://www.cctvcamerapros.com/IP-Camera-NVRs-s/1472.htm" target="_blank">NVR</a>
+    with HTTP POST support. For license plate recognition, use the
+    <a href="https://www.cctvcamerapros.com/LPR-Camera-p/lpr-ip4.htm" target="_blank"
+      >LPR-IP4</a
+    >. All Viewtron products are NDAA compliant.
+  </p>
+</script>
