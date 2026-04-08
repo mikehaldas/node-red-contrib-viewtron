@@ -309,8 +309,8 @@ module.exports = function (RED) {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
       req.on("end", () => {
-        // Keepalive — empty body or DeviceInfo
-        if (!body || body.length === 0 || body.includes("<DeviceInfo>")) {
+        // Keepalive — empty body, DeviceInfo, or messageType keepalive
+        if (!body || body.length === 0 || body.toLowerCase().includes("<deviceinfo>") || body.includes("<messageType>keepalive</messageType>")) {
           const ip = req.socket.remoteAddress?.replace("::ffff:", "") || "unknown";
           if (!connectedCameras[ip]) {
             connectedCameras[ip] = true;
@@ -323,6 +323,9 @@ module.exports = function (RED) {
 
         // Skip traject (high-volume continuous tracking data)
         if (body.includes('<traject type="list"')) return;
+
+        // Skip alarmStatus (just alarm on/off, no detection data)
+        if (body.includes("alarmStatusInfo")) return;
 
         try {
           const parsed = xmlParser.parse(body);
