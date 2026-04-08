@@ -1,6 +1,6 @@
 # node-red-contrib-viewtron
 
-Viewtron AI camera node for Node-RED node received AI detection events from [Viewtron IP cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm). License plate recognition (LPR/ALPR), human detection, vehicle detection, face detection, people counting, and intrusion detection — all processed on the camera with no cloud service required.
+Viewtron AI camera node for Node-RED node received AI detection events from [Viewtron IP cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm). License plate recognition (LPR/ALPR), human detection, vehicle detection, face detection, people counting, and intrusion detection — all processed on the camera with no cloud service required. Please note that license plate recognition is the only type of event that is currently tested and documented thoroughly. We will be publishing the others very soon.
 
 ![Viewtron AI Camera node in Node-RED with live LPR events](https://videos.cctvcamerapros.com/wp-content/files/Node-RED-LPR-camera-integration.jpg)
 
