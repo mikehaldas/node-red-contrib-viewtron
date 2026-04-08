@@ -187,9 +187,9 @@ Version detection is automatic — the node handles both formats.
 
 Any [Viewtron AI security camera](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) or [NVR](https://www.cctvcamerapros.com/IP-Camera-NVRs-s/1472.htm) with HTTP POST support:
 
-- [LPR-IP4](https://www.cctvcamerapros.com/LPR-Camera-p/lpr-ip4.htm) — 4MP LPR camera with on-camera plate recognition
-- [AI security cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) — person, vehicle, and face detection
-- [NVRs](https://www.cctvcamerapros.com/IP-Camera-NVRs-s/1472.htm) — forward events from all connected cameras
+- [LPR-IP4](https://www.cctvcamerapros.com/LPR-Camera-p/lpr-ip4.htm) — 4MP LPR camera with on-camera plate recognition. Fully tested with Node-RED.
+- [AI security cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) — person, vehicle, and face detection. Testing scheduled.
+- [NVRs](https://www.cctvcamerapros.com/IP-Camera-NVRs-s/1472.htm) — forward events from all connected cameras. Testing scheduled.
 
 All Viewtron products are NDAA compliant.
 
