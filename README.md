@@ -137,6 +137,22 @@ The Buffer fields are ready to pipe directly to file nodes, dashboard image widg
 
 ![Viewtron LPR camera dashboard in Node-RED](https://videos.cctvcamerapros.com/wp-content/files/Node-RED-LPR-Camera-Dashboard.jpg)
 
+Screenshot of source_image and target_image displayed in a Dashboard 2.0 template widget. To recreate this, wire the LPR output (output 1) to a **ui-template** node with this content:
+
+```html
+<div v-if="msg?.payload?.plate_number">
+  <h3>{{ msg.payload.plate_number }} — {{ msg.payload.plate_group || "unknown" }}</h3>
+</div>
+<div v-if="msg?.payload?.source_image" style="margin-bottom:10px">
+  <img :src="'data:image/jpeg;base64,' + msg.payload.source_image" style="width:100%" />
+</div>
+<div v-if="msg?.payload?.target_image">
+  <img :src="'data:image/jpeg;base64,' + msg.payload.target_image" style="width:100%" />
+</div>
+```
+
+Requires [@flowfuse/node-red-dashboard](https://flows.nodered.org/node/@flowfuse/node-red-dashboard) (Dashboard 2.0).
+
 These payloads can be large (300KB+) — the **Include images** checkbox on the node controls whether images are passed through to the output or stripped.
 
 ## Example: LPR Gate Access
