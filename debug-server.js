@@ -40,8 +40,15 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  const MAX_BODY = 5 * 1024 * 1024; // 5MB
   let body = "";
-  req.on("data", (chunk) => (body += chunk));
+  req.on("data", (chunk) => {
+    body += chunk;
+    if (body.length > MAX_BODY) {
+      body = "";
+      req.destroy();
+    }
+  });
   req.on("end", () => {
     postCount++;
     const len = body.length;

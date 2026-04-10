@@ -331,8 +331,15 @@ module.exports = function (RED) {
 
       if (req.method !== "POST") return;
 
+      const MAX_BODY = 5 * 1024 * 1024; // 5MB
       let body = "";
-      req.on("data", (chunk) => (body += chunk));
+      req.on("data", (chunk) => {
+        body += chunk;
+        if (body.length > MAX_BODY) {
+          body = "";
+          req.destroy();
+        }
+      });
       req.on("end", () => {
         // Keepalive — empty body, keepalive messageType, or deviceInfo-only (no smartType)
         if (!body || body.length === 0 || body.includes("<messageType>keepalive</messageType>") ||
