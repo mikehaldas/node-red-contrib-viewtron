@@ -91,7 +91,7 @@ module.exports = function (RED) {
         timestamp: getText(config.currentTime),
       };
 
-      // LPR — plate number and authorization
+      // LPR — plate number and group
       if (category === "lpr") {
         const listInfo = config.listInfo;
         if (listInfo) {
@@ -101,11 +101,7 @@ module.exports = function (RED) {
           for (const item of items) {
             if (item.plateNumber) {
               msg.plate_number = getText(item.plateNumber);
-              const listType = getText(item.vehicleListType);
-              if (listType === "whiteList") msg.plate_status = "Authorized";
-              else if (listType === "blackList") msg.plate_status = "Blacklisted";
-              else if (listType === "temporaryList") msg.plate_status = "Temporary";
-              else msg.plate_status = "Unknown";
+              msg.plate_group = getText(item.vehicleListType);
             }
           }
         }
@@ -145,13 +141,15 @@ module.exports = function (RED) {
         msg.event_description = "Face Detected";
       }
 
-      // Images
+      // Images — base64 strings and decoded Buffer bytes
       if (includeImages) {
+        // IPC puts overview in sourceDataInfo OR in listInfo item[0]
         const src = config.sourceDataInfo;
         if (src && src.sourceBase64Data) {
           const data = getText(src.sourceBase64Data);
           if (data && !data.startsWith("BASE64")) {
             msg.source_image = data;
+            msg.source_image_bytes = Buffer.from(data, "base64");
           }
         }
         const listInfo = config.listInfo;
@@ -159,12 +157,33 @@ module.exports = function (RED) {
           const items = Array.isArray(listInfo.item)
             ? listInfo.item
             : [listInfo.item];
-          // Last item typically has the target crop
-          const last = items[items.length - 1];
-          if (last && last.targetImageData) {
-            const data = getText(last.targetImageData.targetBase64Data);
-            if (data && !data.startsWith("BASE64")) {
-              msg.target_image = data;
+          if (items.length >= 2) {
+            // Two items: first is overview, second is target crop
+            const overview = items[0];
+            if (!msg.source_image && overview && overview.targetImageData) {
+              const data = getText(overview.targetImageData.targetBase64Data);
+              if (data && !data.startsWith("BASE64")) {
+                msg.source_image = data;
+                msg.source_image_bytes = Buffer.from(data, "base64");
+              }
+            }
+            const target = items[1];
+            if (target && target.targetImageData) {
+              const data = getText(target.targetImageData.targetBase64Data);
+              if (data && !data.startsWith("BASE64")) {
+                msg.target_image = data;
+                msg.target_image_bytes = Buffer.from(data, "base64");
+              }
+            }
+          } else if (items.length === 1) {
+            // Single item — treat as target crop
+            const item = items[0];
+            if (item && item.targetImageData) {
+              const data = getText(item.targetImageData.targetBase64Data);
+              if (data && !data.startsWith("BASE64")) {
+                msg.target_image = data;
+                msg.target_image_bytes = Buffer.from(data, "base64");
+              }
             }
           }
         }
@@ -193,7 +212,7 @@ module.exports = function (RED) {
         timestamp: getText(config.currentTime),
       };
 
-      // LPR — plate and vehicle attributes
+      // LPR — plate, vehicle attributes, and plate group
       if (category === "lpr" && config.licensePlateListInfo) {
         const items = Array.isArray(config.licensePlateListInfo.item)
           ? config.licensePlateListInfo.item
@@ -212,6 +231,10 @@ module.exports = function (RED) {
               model: getText(car.model),
             };
           }
+          const matchInfo = plate.licensePlateMatchInfo || {};
+          msg.plate_group = getText(matchInfo.groupName);
+          const owner = getText(matchInfo.carOwner);
+          if (owner) msg.car_owner = owner;
         }
       }
 
@@ -261,13 +284,14 @@ module.exports = function (RED) {
         }
       }
 
-      // Images
+      // Images — base64 strings and decoded Buffer bytes
       if (includeImages) {
         const src = config.sourceDataInfo;
         if (src && src.sourceBase64Data) {
           const data = getText(src.sourceBase64Data);
           if (data && !data.startsWith("BASE64")) {
             msg.source_image = data;
+            msg.source_image_bytes = Buffer.from(data, "base64");
           }
         }
         // Target image from various list structures
@@ -284,6 +308,7 @@ module.exports = function (RED) {
               const data = getText(item.targetImageData.targetBase64Data);
               if (data && !data.startsWith("BASE64")) {
                 msg.target_image = data;
+                msg.target_image_bytes = Buffer.from(data, "base64");
                 break;
               }
             }
@@ -309,8 +334,9 @@ module.exports = function (RED) {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
       req.on("end", () => {
-        // Keepalive — empty body, DeviceInfo, or messageType keepalive
-        if (!body || body.length === 0 || body.toLowerCase().includes("<deviceinfo>") || body.includes("<messageType>keepalive</messageType>")) {
+        // Keepalive — empty body, keepalive messageType, or deviceInfo-only (no smartType)
+        if (!body || body.length === 0 || body.includes("<messageType>keepalive</messageType>") ||
+            (body.toLowerCase().includes("<deviceinfo>") && !body.includes("smartType"))) {
           const ip = req.socket.remoteAddress?.replace("::ffff:", "") || "unknown";
           if (!connectedCameras[ip]) {
             connectedCameras[ip] = true;
@@ -390,7 +416,7 @@ module.exports = function (RED) {
           // Update node status
           const statusText =
             cat === "lpr"
-              ? `${event.plate_number} (${event.plate_status || ""})`
+              ? `${event.plate_number} (${event.plate_group || "unknown"})`
               : cat === "face"
               ? `Face: ${event.face?.age || ""} ${event.face?.sex || ""}`
               : `${event.event_type}: ${event.target_type || cat}`;
@@ -411,6 +437,9 @@ module.exports = function (RED) {
 
     try {
       server = http.createServer(handleRequest);
+      // Camera sends heartbeats every 30s — keep connections alive long enough
+      server.keepAliveTimeout = 60000;
+      server.headersTimeout = 65000;
       server.listen(port, () => {
         node.log(`Listening on port ${port}`);
         node.status({

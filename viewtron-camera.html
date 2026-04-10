@@ -70,9 +70,10 @@
     <li>
       <b>LPR</b> — License plate recognition events.
       <code>msg.payload.plate_number</code>,
-      <code>msg.payload.plate_status</code> (Authorized, Blacklisted,
-      Temporary, Unknown), <code>msg.payload.vehicle</code> (brand, color, type
-      — NVR v2.0 only).
+      <code>msg.payload.plate_group</code> (raw value from camera database — IPC: whiteList, blackList, temporaryList; NVR: user-defined group name),
+      <code>msg.payload.vehicle</code> (brand, color, type — NVR v2.0 only),
+      <code>msg.payload.source_image_bytes</code> (overview JPEG),
+      <code>msg.payload.target_image_bytes</code> (plate crop JPEG).
     </li>
     <li>
       <b>Intrusion</b> — Person/vehicle enters a zone, crosses a line, or
