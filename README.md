@@ -263,7 +263,7 @@ All Viewtron products are NDAA compliant.
 The camera's persistent connection is alive (heartbeats work) but alarm events may not be flowing. Try:
 1. Reboot the camera — required after changing HTTP POST settings
 2. Check that **Smart event data** and the correct **Smart Alarm Type** are enabled
-3. For NVR: ensure the LPR channel is selected for smart alarm forwarding
+3. For NVR: ensure License Plate Detection is enabled in the HTTP Post settings
 
 **Debug tool:** A standalone debug server is included for diagnosing connection issues:
 
