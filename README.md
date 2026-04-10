@@ -2,7 +2,7 @@
 
 Viewtron AI camera node for Node-RED. Receives AI detection events from [Viewtron IP cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) and NVRs. License plate recognition (LPR/ALPR), human detection, vehicle detection, face detection, people counting, and intrusion detection — all processed on the camera with no cloud service required. Supports both direct camera connections (IPC v1.x) and NVR forwarding (v2.0) with automatic version detection. LPR is fully tested with the [Viewtron LPR-IP4 camera](https://www.cctvcamerapros.com/LPR-Camera-p/lpr-ip4.htm) and NVR. Other AI event types coming soon.
 
-![Viewtron AI Camera node in Node-RED with live LPR events](https://videos.cctvcamerapros.com/wp-content/files/Node-RED-LPR-camera-integration.jpg)
+![Viewtron AI Camera node in Node-RED with live LPR events](https://videos.cctvcamerapros.com/wp-content/files/Node-RED-LPR-Camera.jpg)
 
 ## Install
 
@@ -134,6 +134,8 @@ When **Original picture** and **Target picture** are enabled on the camera, even
 | `target_image_bytes` | Buffer | Cropped target as decoded JPEG bytes |
 
 The Buffer fields are ready to pipe directly to file nodes, dashboard image widgets, or MQTT nodes. The base64 fields are useful for embedding in HTML or sending via API.
+
+![Viewtron LPR camera dashboard in Node-RED](https://videos.cctvcamerapros.com/wp-content/files/Node-RED-LPR-Camera-Dashboard.jpg)
 
 These payloads can be large (300KB+) — the **Include images** checkbox on the node controls whether images are passed through to the output or stripped.
 
