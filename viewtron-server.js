@@ -11,7 +11,7 @@
 
 'use strict';
 
-const { ViewtronServer } = require('viewtron');
+const { ViewtronServer } = require('viewtron-sdk');
 
 module.exports = function (RED) {
   function ViewtronServerNode(config) {

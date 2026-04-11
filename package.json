@@ -41,7 +41,7 @@
   },
   "homepage": "https://videos.cctvcamerapros.com/developer/",
   "dependencies": {
-    "viewtron": "github:mikehaldas/viewtron-nodejs-sdk"
+    "viewtron-sdk": "github:mikehaldas/viewtron-nodejs-sdk"
   },
   "node-red": {
     "version": ">=2.0.0",
