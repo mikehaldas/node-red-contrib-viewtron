@@ -1,0 +1,31 @@
+<script type="text/javascript">
+  RED.nodes.registerType("viewtron-server", {
+    category: "config",
+    defaults: {
+      name: { value: "" },
+      port: { value: 5050, required: true, validate: RED.validators.number() },
+    },
+    label: function () {
+      return this.name || "port: " + this.port;
+    },
+  });
+</script>
+
+<script type="text/html" data-template-name="viewtron-server">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-port"><i class="fa fa-plug"></i> Port</label>
+    <input
+      type="number"
+      id="node-config-input-port"
+      placeholder="5050"
+      style="width: 100px"
+    />
+    <span style="margin-left: 8px; color: #888"
+      >HTTP listener port for camera events</span
+    >
+  </div>
+</script>
