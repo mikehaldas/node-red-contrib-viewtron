@@ -1,6 +1,6 @@
 # node-red-contrib-viewtron
 
-Viewtron AI camera node for Node-RED. Receives AI detection events from [Viewtron IP cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) and NVRs. License plate recognition (LPR/ALPR), human detection, vehicle detection, face detection, people counting, and intrusion detection — all processed on the camera with no cloud service required. Supports both direct camera connections (IPC v1.x) and NVR forwarding (v2.x) with automatic version detection.
+Viewtron AI camera node for Node-RED. Receives AI detection events from [Viewtron AI security cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) and NVRs. License plate recognition (LPR/ALPR), human detection, vehicle detection, face detection, people counting, and intrusion detection — all processed on the camera with no cloud service required. Supports both direct camera connections (IPC v1.x) and NVR forwarding (v2.x) with automatic version detection.
 
 ![Viewtron AI Camera node in Node-RED with live LPR events](https://videos.cctvcamerapros.com/wp-content/files/Node-RED-LPR-Camera.jpg)
 
@@ -263,7 +263,11 @@ Import this flow to get started with license plate gate access control. The View
 
 ## Example: Allow List Gate and Block List Alert
 
-Leave the node's direction, confidence, and plate list filters blank. This flow uses the LPR output and Switch nodes so one camera can do both jobs:
+Leave the node's direction, confidence, and plate list filters blank.
+
+This is the same allow / block logic we use for [license plate recognition gate access](https://videos.cctvcamerapros.com/v/alpr-gate-access-control.html). For a code version of an entry gate, see [LPR camera API for entry gate automation](https://videos.cctvcamerapros.com/support/topic/lpr-camera-gate-automation).
+
+This flow uses the LPR output and Switch nodes so one camera can do both jobs:
 
 - Open the gate only for an allow-list plate (`plateList` = `whiteList`) that is approaching with confidence of at least 90.
 - Alert when the plate is on the block list (`plateList` = `blackList`).
@@ -394,7 +398,7 @@ Version detection is automatic — the SDK handles both formats.
 
 Any [Viewtron AI security camera](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) or [NVR](https://www.cctvcamerapros.com/IP-Camera-NVRs-s/1472.htm) with HTTP POST support:
 
-- [LPR-IP4](https://www.cctvcamerapros.com/LPR-Camera-p/lpr-ip4.htm) — 4MP LPR camera with on-camera plate recognition. Fully tested with Node-RED.
+- [Viewtron LPR-IP4 license plate recognition camera](https://www.cctvcamerapros.com/LPR-Camera-p/lpr-ip4.htm) — 4MP LPR camera with on-camera plate recognition. API 2.1 firmware (5.3.x) adds direction, confidence, plate list and vehicle attributes to every plate. Fully tested with Node-RED.
 - [AI security cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) — person, vehicle, and face detection. Testing scheduled.
 - [NVRs](https://www.cctvcamerapros.com/IP-Camera-NVRs-s/1472.htm) — forward events from all connected cameras. LPR tested and working.
 
@@ -419,6 +423,10 @@ node debug-server.js 5050
 
 This logs every HTTP POST with full headers, body preview, and post classification (keepalive, alarm data, etc.) — no filtering. Raw XML is saved to `raw_posts/` for inspection.
 
+## New in 2.1.1
+
+Documentation only: link fixes and example updates. No code changes.
+
 ## New in 2.1.0
 
 2.1.0 adds fields. It does not change the five outputs or rename existing fields. Flows built for 2.0.0 keep working when the new filters are left blank.
@@ -428,6 +436,8 @@ Plate messages now include `eventTime`, `direction`, `confidence`, `plateList`, 
 Alarm on/off notices are not detection events. They are not sent to any output. Keepalives are ignored the same way.
 
 Requires viewtron-sdk 1.1.0 or newer.
+
+Flows, screenshots and the full field list are in the [Node-RED IP camera integration guide](https://videos.cctvcamerapros.com/developer/docs/integrations/node-red/). See [Compatible Cameras](#compatible-cameras) for the tested LPR camera.
 
 ## Breaking Changes from v1
 
@@ -455,10 +465,13 @@ v2.0.0 is a full rewrite. Existing flows will need to be updated.
 - [Node.js SDK](https://www.npmjs.com/package/viewtron-sdk) — `npm install viewtron-sdk` for standalone Node.js projects
 - [Python SDK](https://videos.cctvcamerapros.com/developer/docs/getting-started/python-sdk/) — `pip install viewtron` for Python projects
 - [Home Assistant Integration](https://videos.cctvcamerapros.com/developer/docs/integrations/home-assistant/) — MQTT bridge for Home Assistant
+- [Node-RED IP camera integration guide](https://videos.cctvcamerapros.com/developer/docs/integrations/node-red/) — this node on the developer portal, with flows and screenshots
+- [License plate recognition camera API](https://videos.cctvcamerapros.com/developer/docs/applications/license-plate-recognition-camera-api/) — every LPR field the camera sends
+- [Home Assistant license plate recognition](https://videos.cctvcamerapros.com/support/topic/home-assistant-lpr-camera-api) — the same camera events in Home Assistant
 
 ## Related Projects
 
-- [viewtron-sdk](https://github.com/mikehaldas/viewtron-sdk) — Node.js SDK for Viewtron camera events (used by this node)
+- [viewtron-nodejs-sdk](https://github.com/mikehaldas/viewtron-nodejs-sdk) — Node.js SDK for Viewtron camera events (`npm install viewtron-sdk`, used by this node)
 - [viewtron-home-assistant](https://github.com/mikehaldas/viewtron-home-assistant) — Home Assistant integration via MQTT
 - [viewtron-python-sdk](https://github.com/mikehaldas/viewtron-python-sdk) — Python SDK (`pip install viewtron`)
 - [IP-Camera-API](https://github.com/mikehaldas/IP-Camera-API) — API documentation, XML examples, Docusaurus site
