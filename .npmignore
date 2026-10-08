@@ -3,3 +3,5 @@ test.js
 test/
 .git
 .gitignore
+.github/
+package-lock.json
