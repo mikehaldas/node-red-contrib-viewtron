@@ -1,0 +1,32 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          if npm view viewtron-sdk@1.1.0 version >/dev/null 2>&1; then
+            npm install
+          else
+            echo "viewtron-sdk 1.1.0 is not on npm yet; installing the 1.1.0 branch for tests"
+            sdk="${RUNNER_TEMP}/viewtron-nodejs-sdk"
+            git clone --depth 1 --branch cursor/api-2-1-unparsed-events-3519 \
+              https://github.com/mikehaldas/viewtron-nodejs-sdk.git "$sdk"
+            npm install --prefix "$sdk"
+            mkdir -p node_modules
+            ln -s "$sdk" node_modules/viewtron-sdk
+          fi
+      - run: npm test

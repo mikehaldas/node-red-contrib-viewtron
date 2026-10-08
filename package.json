@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-viewtron",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Receive AI detection events from Viewtron IP cameras — license plate recognition (LPR/ALPR), human detection, vehicle detection, face detection. On-camera AI, no cloud required.",
   "keywords": [
     "node-red",
@@ -41,7 +41,10 @@
   },
   "homepage": "https://videos.cctvcamerapros.com/developer/",
   "dependencies": {
-    "viewtron-sdk": "^1.0.0"
+    "viewtron-sdk": "^1.1.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
   },
   "node-red": {
     "version": ">=2.0.0",

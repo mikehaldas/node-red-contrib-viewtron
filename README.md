@@ -1,6 +1,6 @@
 # node-red-contrib-viewtron
 
-Viewtron AI camera node for Node-RED. Receives AI detection events from [Viewtron IP cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) and NVRs. License plate recognition (LPR/ALPR), human detection, vehicle detection, face detection, people counting, and intrusion detection — all processed on the camera with no cloud service required. Supports both direct camera connections (IPC v1.x) and NVR forwarding (v2.0) with automatic version detection.
+Viewtron AI camera node for Node-RED. Receives AI detection events from [Viewtron IP cameras](https://www.cctvcamerapros.com/AI-security-cameras-s/1512.htm) and NVRs. License plate recognition (LPR/ALPR), human detection, vehicle detection, face detection, people counting, and intrusion detection — all processed on the camera with no cloud service required. Supports both direct camera connections (IPC v1.x) and NVR forwarding (v2.x) with automatic version detection.
 
 ![Viewtron AI Camera node in Node-RED with live LPR events](https://videos.cctvcamerapros.com/wp-content/files/Node-RED-LPR-Camera.jpg)
 
@@ -15,7 +15,7 @@ cd ~/.node-red
 npm install node-red-contrib-viewtron
 ```
 
-Requires Node.js 18+ and Node-RED 2.0+. The [viewtron-sdk](https://www.npmjs.com/package/viewtron-sdk) dependency is installed automatically.
+Requires Node.js 18+, Node-RED 2.0+, and [viewtron-sdk](https://www.npmjs.com/package/viewtron-sdk) 1.1.0 or newer. The SDK dependency is installed automatically.
 
 ## How It Works
 
@@ -35,7 +35,7 @@ NVR ---------+                      +---> Viewtron AI Camera node ---> MQTT Brid
 
 **Viewtron Server** (config node) — runs a shared HTTP server on a single port. All cameras and NVRs connect to this one server. Handles persistent connections, keepalive heartbeats, XML parsing, and all camera protocol requirements via the SDK. Hidden from the palette; created from the server dropdown on the Viewtron AI Camera node.
 
-**Viewtron AI Camera** (listener node) — receives parsed events from the server and routes them to 5 category outputs: LPR, Intrusion, Face, Counting, and Other. Multiple listener nodes can share one server. Each listener receives every event from every connected camera. Use standard Node-RED **Switch** nodes after any output to filter by camera, channel, plate group, or any other field.
+**Viewtron AI Camera** (listener node) — receives parsed events from the server and routes them to 5 category outputs: LPR, Intrusion, Face, Counting, and Other. Multiple listener nodes can share one server. Each listener receives every event from every connected camera. Optional filters on the listener (direction, minimum confidence, plate list) apply to the LPR output only and default to passing every plate. Use standard Node-RED **Switch** nodes after any output to branch by camera, channel, plate list, direction, confidence, or any other field.
 
 No middleware, no bridge, no cloud API. The cameras post directly to Node-RED.
 
@@ -88,10 +88,12 @@ When cameras are connected to an NVR's PoE ports and the NVR forwards events, al
 | | IPC (Direct) | NVR (Forwarded) |
 |---|---|---|
 | **Connection** | Camera -> Node-RED | Camera -> NVR -> Node-RED |
-| **XML Version** | v1.x | v2.0 |
+| **XML Version** | v1.x | v2.x |
 | **Plate detection** | Yes | Yes |
-| **Plate database groups** | Fixed: whiteList, blackList, temporaryList | User-defined: any group name |
-| **Vehicle attributes** | No | Yes (brand, color, type, model) |
+| **Plate database groups** | Fixed: whiteList, blackList, temporaryList, strangerList | User-defined: any group name |
+| **Direction** | `approach`, `away`, or null | null |
+| **Confidence** | 0–100, or null when the camera omits it | null |
+| **Vehicle attributes** | When the camera sends them | Yes (brand, color, type, model) |
 | **Owner from database** | No | Yes |
 | **Channel ID** | No | Yes (intrusion, face, counting only — not LPR) |
 | **Images** | Yes (both) | Yes (both) |
@@ -102,7 +104,7 @@ The node has 5 outputs, one per detection category:
 
 | Output | Category | Key Fields |
 |--------|----------|------------|
-| 1 | **LPR** | `plateNumber`, `plateGroup` (raw value from camera/NVR plate database), `vehicle` (brand, color, type — NVR only), `carOwner` (NVR only) |
+| 1 | **LPR** | `plateNumber`, `plateGroup`, `plateList`, `direction`, `confidence`, `eventTime`, `vehicle` / `vehicleColor` / `vehicleBrand` / `vehicleType` / `vehicleModel`, `carOwner` (NVR only) |
 | 2 | **Intrusion** | `targetType` (person, car, motorcycle), `eventId`, `status`, `boundary` (area, tripwire — NVR only) |
 | 3 | **Face** | `face.age`, `face.sex`, `face.glasses`, `face.mask` (NVR only) |
 | 4 | **Counting** | `targetType`, `boundary` |
@@ -115,17 +117,23 @@ Wire each output to the flow logic you need — separate handling for plates vs.
 | Field | IPC | NVR | Description |
 |-------|-----|-----|-------------|
 | `plateNumber` | Yes | Yes | Detected license plate text |
-| `plateGroup` | Yes | Yes | Plate database group — see [Plate Groups](#plate-groups) |
+| `plateGroup` | Yes | Yes | Raw plate database group — see [Plate Groups](#plate-groups) |
+| `plateList` | Yes | When the group name is one of the four known lists | `whiteList`, `blackList`, `temporaryList`, `strangerList`, or `null` |
+| `direction` | Yes | null | `approach`, `away`, or `null` when the camera does not send a direction |
+| `confidence` | Yes | null | Recognition confidence from 0 to 100. A camera value of `9900` is `99`. `0` is a real score. Missing is `null` |
+| `eventTime` | Yes | Yes | `Date` parsed from the camera clock. `timestamp` stays the raw text |
+| `vehicle.type` / `vehicleType` | When sent | Yes | Vehicle type (e.g., "sedan", "SUV") |
+| `vehicle.color` / `vehicleColor` | When sent | Yes | Vehicle color |
+| `vehicle.brand` / `vehicleBrand` | When sent | Yes | Vehicle brand (e.g., "Toyota") |
+| `vehicle.model` / `vehicleModel` | When sent | Yes | Vehicle model |
 | `plateColor` | No | Yes | Plate color (e.g., "white") |
-| `vehicle.type` | No | Yes | Vehicle type (e.g., "sedan", "SUV") |
-| `vehicle.color` | No | Yes | Vehicle color |
-| `vehicle.brand` | No | Yes | Vehicle brand (e.g., "Toyota") |
-| `vehicle.model` | No | Yes | Vehicle model |
 | `carOwner` | No | Yes | Owner name from NVR plate database |
 | `sourceImage` | Yes | Yes | Overview image (base64 JPEG) |
 | `sourceImageBytes` | Yes | Yes | Overview image (Buffer) |
 | `targetImage` | Yes | Yes | Plate crop image (base64 JPEG) |
 | `targetImageBytes` | Yes | Yes | Plate crop image (Buffer) |
+
+`vehicle` and the flat `vehicleColor`, `vehicleBrand`, `vehicleType`, and `vehicleModel` fields carry the same attributes. The flat fields are empty strings when the post has no vehicle attributes. `plateList` is `null` for custom NVR group names; those names stay on `plateGroup`.
 
 ### Common Fields
 
@@ -141,7 +149,10 @@ Every event message includes:
 | `msg.payload.cameraName` | string | Device name configured on the camera or NVR |
 | `msg.payload.cameraMac` | string | MAC address of the camera or NVR |
 | `msg.payload.channelId` | string | NVR channel number (intrusion, face, counting only — not present on NVR LPR events) |
-| `msg.payload.timestamp` | string | Event timestamp from the camera |
+| `msg.payload.timestamp` | string | Raw camera `currentTime` text. Direct camera posts often send microseconds, including on 5.3.x firmware. This value is not converted |
+| `msg.payload.eventTime` | Date | The same instant as a `Date`, or `null` when the camera time is missing. Values of 100 trillion or more are microseconds, 100 billion or more are milliseconds, and smaller values are seconds |
+| `msg.payload.configVersion` | string | Config version from the post, for example `1.7` or `2.1.0` |
+| `msg.payload.format` | string | `v1` or `v2`, from the config version major |
 | `msg.payload.hasImages` | boolean | `true` when images are present |
 | `msg.topic` | string | `viewtron/{category}` for easy MQTT republishing |
 
@@ -164,7 +175,10 @@ Screenshot of sourceImage and targetImage displayed in a Dashboard 2.0 template 
 
 ```html
 <div v-if="msg?.payload?.plateNumber">
-  <h3>{{ msg.payload.plateNumber }} — {{ msg.payload.plateGroup || "unknown" }}</h3>
+  <h3>{{ msg.payload.plateNumber }} — {{ msg.payload.plateList || msg.payload.plateGroup || "unknown" }}</h3>
+  <p v-if="msg.payload.confidence != null">
+    {{ msg.payload.direction || "direction unknown" }} · {{ msg.payload.confidence }}
+  </p>
 </div>
 <div v-if="msg?.payload?.sourceImage" style="margin-bottom:10px">
   <img :src="'data:image/jpeg;base64,' + msg.payload.sourceImage" style="width:100%" />
@@ -178,16 +192,27 @@ Requires [@flowfuse/node-red-dashboard](https://flows.nodered.org/node/@flowfuse
 
 ## Filtering by Camera
 
-The node itself does not filter — it outputs every event from every connected camera. Use standard Node-RED **Switch** nodes after any output to route events.
+By default the node outputs every event from every connected camera. The listener has three optional LPR filters. Leave them blank and every plate is passed through. They do not affect intrusion, face, counting, or other events.
 
-Common filter fields:
+| Node setting | Default | Effect on the LPR output |
+|--------------|---------|--------------------------|
+| Direction | Any | Keep only `approach` or only `away` |
+| Min confidence | Blank | Drop plates below this score. A plate with no confidence is dropped when a minimum is set |
+| Plate list | Any | Keep one of `whiteList`, `blackList`, `temporaryList`, or `strangerList` |
+
+All three are combined. A plate must match every filter that is set. Existing flows have no filter values, so they keep receiving every plate.
+
+Use a Switch node when one event needs more than one destination, for example opening a gate and also alerting. Switch fields:
 
 | Field | Use Case |
 |-------|----------|
 | `msg.payload.cameraIp` | Filter by camera IP address (best for direct connections) |
 | `msg.payload.channelId` | Filter by NVR channel number (intrusion, face, counting events only) |
 | `msg.payload.source` | Filter by `IPC` (direct) or `NVR` |
-| `msg.payload.plateGroup` | Route LPR events by plate database group |
+| `msg.payload.plateList` | Route known lists: `whiteList`, `blackList`, `temporaryList`, `strangerList` |
+| `msg.payload.plateGroup` | Route by the raw plate database group, including custom NVR names |
+| `msg.payload.direction` | Route `approach` or `away` |
+| `msg.payload.confidence` | Route by a minimum score |
 | `msg.payload.targetType` | Filter by `person`, `car`, `motorcycle` |
 
 Example: filter LPR events from a specific camera. Wire the LPR output to a Switch node with property `msg.payload.cameraIp` equals `192.168.1.100`.
@@ -236,9 +261,91 @@ Import this flow to get started with license plate gate access control. The View
 ]
 ```
 
+## Example: Allow List Gate and Block List Alert
+
+Leave the node's direction, confidence, and plate list filters blank. This flow uses the LPR output and Switch nodes so one camera can do both jobs:
+
+- Open the gate only for an allow-list plate (`plateList` = `whiteList`) that is approaching with confidence of at least 90.
+- Alert when the plate is on the block list (`plateList` = `blackList`).
+
+Plates that miss any of the allow-list checks are dropped. Custom NVR group names are on `plateGroup` instead of `plateList`; switch on `plateGroup` for those.
+
+```json
+[
+    {
+        "id": "server1",
+        "type": "viewtron-server",
+        "name": "Camera Server",
+        "port": "5050"
+    },
+    {
+        "id": "gate_camera",
+        "type": "viewtron-camera",
+        "name": "Gate Camera",
+        "server": "server1",
+        "direction": "",
+        "minConfidence": "",
+        "plateList": "",
+        "wires": [["switch_list"], [], [], [], []]
+    },
+    {
+        "id": "switch_list",
+        "type": "switch",
+        "name": "Plate list",
+        "property": "payload.plateList",
+        "propertyType": "msg",
+        "rules": [
+            {"t": "eq", "v": "whiteList", "vt": "str"},
+            {"t": "eq", "v": "blackList", "vt": "str"}
+        ],
+        "checkall": "false",
+        "outputs": 2,
+        "wires": [["switch_direction"], ["alert_block"]]
+    },
+    {
+        "id": "switch_direction",
+        "type": "switch",
+        "name": "Approaching",
+        "property": "payload.direction",
+        "propertyType": "msg",
+        "rules": [
+            {"t": "eq", "v": "approach", "vt": "str"}
+        ],
+        "checkall": "false",
+        "outputs": 1,
+        "wires": [["switch_confidence"]]
+    },
+    {
+        "id": "switch_confidence",
+        "type": "switch",
+        "name": "Confidence at least 90",
+        "property": "payload.confidence",
+        "propertyType": "msg",
+        "rules": [
+            {"t": "gte", "v": "90", "vt": "num"}
+        ],
+        "checkall": "false",
+        "outputs": 1,
+        "wires": [["gate_open"]]
+    },
+    {
+        "id": "gate_open",
+        "type": "debug",
+        "name": "Open Gate"
+    },
+    {
+        "id": "alert_block",
+        "type": "debug",
+        "name": "Alert: Block list"
+    }
+]
+```
+
+The same allow-list rule can be set on the node itself (Direction = Approaching, Min confidence = 90, Plate list = Allow list) when that listener should not receive other plates. Use a second listener on the same server, with Plate list = Block list, for the alert.
+
 ## Plate Groups
 
-The `plateGroup` field contains the raw value from the camera or NVR plate database. Your flow decides what each group means.
+The `plateGroup` field contains the raw value from the camera or NVR plate database. Your flow decides what each group means. `plateList` repeats that value when it is `whiteList`, `blackList`, `temporaryList`, or `strangerList`, and is `null` for any other group name.
 
 **IPC cameras** use fixed group names (these are the raw XML values):
 
@@ -247,6 +354,7 @@ The `plateGroup` field contains the raw value from the camera or NVR plate datab
 | `whiteList` | Allow list |
 | `blackList` | Block list |
 | `temporaryList` | Temporary vehicle |
+| `strangerList` | Stranger list |
 | *(empty)* | Not in database |
 
 **NVRs** use user-defined group names — you create groups and name them whatever you want (e.g., "Whitelist", "Residents", "Banned"). The `plateGroup` field shows the group name, or empty if the plate is not in the database.
@@ -268,7 +376,7 @@ Plates are added to the camera's database through its web interface or programma
 | `VSD` | metadata | Video metadata |
 | `PASSLINECOUNT` | counting | People/vehicle counting |
 
-### NVR v2.0 (Forwarded via NVR)
+### NVR v2.x (Forwarded via NVR)
 
 | Alarm Type | Category | Detection |
 |-----------|----------|-----------|
@@ -310,6 +418,16 @@ node debug-server.js 5050
 ```
 
 This logs every HTTP POST with full headers, body preview, and post classification (keepalive, alarm data, etc.) — no filtering. Raw XML is saved to `raw_posts/` for inspection.
+
+## New in 2.1.0
+
+2.1.0 adds fields. It does not change the five outputs or rename existing fields. Flows built for 2.0.0 keep working when the new filters are left blank.
+
+Plate messages now include `eventTime`, `direction`, `confidence`, `plateList`, `vehicleColor`, `vehicleBrand`, `vehicleType`, and `vehicleModel`. Every event also includes `configVersion` and `format`. `timestamp` is still the raw camera time.
+
+Alarm on/off notices are not detection events. They are not sent to any output. Keepalives are ignored the same way.
+
+Requires viewtron-sdk 1.1.0 or newer.
 
 ## Breaking Changes from v1
 
