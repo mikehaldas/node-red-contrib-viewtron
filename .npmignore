@@ -5,3 +5,4 @@ test/
 .gitignore
 .github/
 package-lock.json
+RELEASING.md
