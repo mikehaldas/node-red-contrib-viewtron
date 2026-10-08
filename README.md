@@ -495,6 +495,15 @@ Publishing to npm does not update the Flow Library. As of April 2020, [flows.nod
 
 If this node is not listed yet, add it from the library's **Add a node** page. If it is already listed, sign in and use **request refresh** on the node's page, or submit it again. The catalogue used by Manage palette is rebuilt about every 30 minutes after that.
 
+### Product links (every release)
+
+- [ ] README and release notes link the tested Viewtron camera's product page once, with a descriptive anchor that includes the model (for example "Viewtron LPR-IP4 license plate recognition camera"). No "click here".
+- [ ] Release notes / CHANGELOG entry ends with 2-3 links: the product page, the matching developer docs page, and one related guide.
+- [ ] Every link is a published page and returns 200: `curl -sL -A 'Mozilla/5.0' -o /dev/null -w '%{http_code}' <url>`. No 404s, no redirect hops, no drafts or preview links.
+- [ ] No UTM tags and no rel attributes on links to cctvcamerapros.com or videos.cctvcamerapros.com.
+- [ ] Examples use only the plate IB36NL. Viewtron cameras ship set to DHCP; no example address is presented as a default. Only the Viewtron brand is named.
+- [ ] Release notes can be edited after publishing to add or fix links (no new version needed). README link fixes ship with the next package version, because npm shows the README from the published package.
+
 ## Author
 
 Mike Haldas — [CCTV Camera Pros](https://www.cctvcamerapros.com)
