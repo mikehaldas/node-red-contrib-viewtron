@@ -1,0 +1,92 @@
+# Publish node-red-contrib-viewtron to npm with trusted publishing (no npm token).
+# Runs when a GitHub release is published, or by hand for an existing tag.
+#
+# npm trusted publishing needs npm 11.5.1+ and Node.js 22.14+. Node.js 24
+# ships a new enough npm (11.19 on 24.21). Provenance is attached
+# automatically for a public package published this way from a public
+# repository; do not pass --provenance.
+#
+# Action commits are pinned the same way as viewtron-python-sdk
+# .github/workflows/publish.yml. setup-node v7 is required: v4 writes a
+# placeholder NODE_AUTH_TOKEN, and npm then skips the OIDC exchange.
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to publish, e.g. v2.1.0"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      # No package-lock.json is committed, so npm ci cannot be used.
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check tag matches package.json version
+        run: sh .github/workflows/check-release-tag.sh
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Require npm 11.5.1 or newer
+        run: |
+          version="$(npm --version)"
+          echo "npm $version (node $(node --version))"
+          node -e '
+            const [major, minor, patch] = process.argv[1].split(".").map(Number);
+            const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+            if (!ok) {
+              console.error("npm " + process.argv[1] + " is older than 11.5.1, which trusted publishing requires");
+              process.exit(1);
+            }
+          ' "$version"
+
+      - name: Check tag matches package.json version
+        run: sh .github/workflows/check-release-tag.sh
+
+      # Dependencies stay declared in package.json; they are not installed
+      # in this job, so install scripts never run where the OIDC credential
+      # is available.
+      - name: Publish to npm
+        run: npm publish

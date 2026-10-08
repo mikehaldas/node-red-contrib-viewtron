@@ -463,6 +463,8 @@ v2.0.0 is a full rewrite. Existing flows will need to be updated.
 - [viewtron-python-sdk](https://github.com/mikehaldas/viewtron-python-sdk) — Python SDK (`pip install viewtron`)
 - [IP-Camera-API](https://github.com/mikehaldas/IP-Camera-API) — API documentation, XML examples, Docusaurus site
 
+Maintainers: see [RELEASING.md](RELEASING.md).
+
 ## Author
 
 Mike Haldas — [CCTV Camera Pros](https://www.cctvcamerapros.com)
